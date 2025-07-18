@@ -1,5 +1,6 @@
 require "discordrb"
 require "dotenv/load"
+require_relative "ai"
 
 bot = Discordrb::Bot.new token: ENV["DISCORD_TOKEN"], parse_self: true
 
@@ -21,8 +22,21 @@ bot.message do |event|
     puts "#{source}: #{content}" unless content.empty?
 end
 
-bot.message(content: "foxtest") do |event|
-    event.message.reply!("The quick brown fox jumps over the lazy dog 1234567890", mention_user: true)
+bot.message do |event|
+    if event.message.content.downcase.start_with?("foxtest")
+        event.message.reply!("The quick brown fox jumps over the lazy dog 1234567890", mention_user: true)
+
+    elsif event.message.content.downcase.start_with?(/<@!?#{bot.profile.id}>/) or event.message.content.downcase.start_with?("@sekh")
+        prompt = event.message.content.gsub(/<@!?#{bot.profile.id}>/, "").gsub(/@sekh/, "").strip
+        
+        event.channel.start_typing
+        response = AI.ask(prompt)
+        event.message.reply!(response, mention_user: false)
+    end
 end
+
+
+trap("INT")  { bot.stop }
+trap("TERM") { bot.stop }
 
 bot.run
